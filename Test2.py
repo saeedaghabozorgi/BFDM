@@ -2,6 +2,11 @@ from collections import defaultdict
 from math import sqrt
 import random
 import csv
+import string
+import nltk
+from nltk import PorterStemmer
+#from stemming.porter2 import stem
+
 
 def densify(x, n):
     """Convert a sparse vector to a dense one."""
@@ -54,7 +59,7 @@ if __name__ == '__main__':
     import re
     import sys
 
-    k = 3
+    k = 6
     vocab = {}
     xs = []
     ns=[]
@@ -69,14 +74,31 @@ if __name__ == '__main__':
         except csv.Error as e:
             sys.exit('file %s, line %d: %s' % (filename, newsreader.line_num, e))
 
-    k=3
+
+    remove_spl_char_regex = re.compile('[%s]' % re.escape(string.punctuation)) # regex to remove special characters
+    remove_num = re.compile('[\d]+')
+    #nltk.download()
+    stop_words=nltk.corpus.stopwords.words('english')
 
     for a in ns:
-       x = defaultdict(float)
-       for w in re.findall(r"\w+", a):
+        x = defaultdict(float)
+
+
+        a1 = a.strip().lower()
+        a2 = remove_spl_char_regex.sub(" ",a1)  # Remove special characters
+        a3 = remove_num.sub("", a2)  #Remove numbers
+        #Remove stop words
+        words = a3.split()
+        filter_stop_words = [w for w in words if not w in stop_words]
+        stemed = [PorterStemmer().stem_word(w) for w in filter_stop_words]
+        ws=sorted(stemed)
+
+
+        #ws=re.findall(r"\w+", a1)
+        for w in ws:
                 vocab.setdefault(w, len(vocab))
                 x[vocab[w]] += 1
-       xs.append(x.items())
+        xs.append(x.items())
 
     cluster_ind = kmeans(k, xs, len(vocab))
     clusters = [set() for _ in range(k)]
